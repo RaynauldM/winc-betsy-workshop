@@ -8,7 +8,6 @@ from peewee import (
     ForeignKeyField,
     Check,
     OperationalError,
-    IntegrityError,
 )
 
 
@@ -31,6 +30,12 @@ class User(Base):
     )
 
 
+class Tag(Base):
+    name = CharField(
+        max_length=50, constraints=[Check("length(name) > 0")], unique=True
+    )
+
+
 class Product(Base):
     name = CharField(max_length=50, constraints=[Check("length(name) > 0")])
     description = CharField(
@@ -40,7 +45,7 @@ class Product(Base):
         max_digits=10, decimal_places=2, constraints=[Check("price_per_unit >= 0")]
     )
     quantity_in_stock = IntegerField(constraints=[Check("quantity_in_stock >= 0")])
-    tag = CharField(max_length=50, constraints=[Check("length(tag) > 0")], unique=True)
+    tag = ForeignKeyField(Tag, backref="products")
 
 
 class Transactions(Base):
@@ -54,38 +59,15 @@ class User_product_ownership(Base):
     product = ForeignKeyField(Product, backref="owners")
 
 
-""""
-print("creating connection")
-db.connect()
-print("conection established")
+def create_tables():
+    print("creating connection")
+    db.connect()
+    print("conection established")
 
-try:
-    db.create_tables([User, Product, Transactions, User_product_ownership])
-    print("tables created")
-except OperationalError:
-    print("tables alreay exist")
+    try:
+        db.create_tables([User, Product, Transactions, User_product_ownership, Tag])
+        print("tables created")
+    except OperationalError:
+        print("tables alreay exist")
 
-
-# to be removed, for testing purpose
-try:
-    with db.atomic():
-        user = User.create(
-            name="Poepie",
-            address="123 Main St",
-            billing_info="1234-5678-9012-3456",
-        )
-        product = Product.create(
-            name="Widget",
-            description="A high-quality widget",
-            price_per_unit=10.99,
-            quantity_in_stock=100,
-            tag="gadget",
-        )
-        transaction = Transactions.create(buyer=user, product=product, quantity=5)
-
-        user_product = User_product_ownership.create(user=user, product=product)
-except IntegrityError as e:
-    print("Integrity Error:", e)
-# Close the database connection
-db.close()
-"""
+    db.close()
