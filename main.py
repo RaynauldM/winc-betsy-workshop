@@ -17,7 +17,7 @@ from models import (
 def search(term):
     returnList = []
     for product in Product.select():
-        if term.lower() in product.name.lower():
+        if term.lower() in product.name.lower() or term.lower() in product.description:
             returnList.append(product)
     if returnList:
         for item in returnList:
@@ -50,7 +50,7 @@ def list_products_per_tag(tag_id):
         found_products = tag.products
 
         if found_products:
-            print("Products with chosen tag:")
+            print(f"Products with tag {tag_id}:")
             for product in found_products:
                 print(product.name)
         else:
@@ -65,11 +65,33 @@ def add_product_to_catalog(user_id, product):
         product_to_add = Product.get(Product.name == product)
 
         User_product_ownership.create(user=user, product=product_to_add)
-        print(f"Added product '{product}' to the catalog of user '{user.name}'.")
+        print(f"Added '{product}' to the catalog of '{user.name}'")
     except User.DoesNotExist:
-        print(f"User with ID {user_id} not found.")
+        print(f"User with ID {user_id} not found")
     except Product.DoesNotExist:
-        print(f"Product with name '{product}' not found.")
+        print(f"Product '{product}' not found")
+
+
+def remove_product_from_catalog(user_id, product):
+    try:
+        user = User.get(User.id == user_id)
+        product_to_remove = Product.get(Product.name == product)
+
+        ownership = User_product_ownership.get(
+            (User_product_ownership.user == user)
+            & (User_product_ownership.product == product_to_remove)
+        )
+
+        ownership.delete_instance()
+
+        print(f"'{product}' removed from catalog of '{user.name}'")
+
+    except User.DoesNotExist:
+        print(f"user with id '{user_id}' not found")
+    except Product.DoesNotExist:
+        print(f"'{product}' not found")
+    except User_product_ownership.DoesNotExist:
+        print("error finding the ownership of the product and user")
 
 
 def update_stock(product_id, new_quantity):
@@ -178,4 +200,5 @@ def populate_test_database():
 
 
 if __name__ == "__main__":
-    ...
+    create_tables()
+    populate_test_database()
